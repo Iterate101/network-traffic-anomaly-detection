@@ -1,0 +1,20 @@
+# Python 运行环境
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 真实数据集通常很大，不放进 Git 仓库，只保留 data 目录占位文件
+data/**
+!data/
+!data/.gitkeep
+
+# 实验输出可以随时重新生成
+results/**
+!results/
+!results/.gitkeep
+
+# PPT 文件和本地演示工作区不上传 GitHub
+presentation_workspace/**
+*.ppt
+*.pptx

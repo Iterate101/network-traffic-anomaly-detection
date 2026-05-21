@@ -224,6 +224,7 @@ def _run_autoencoder_experiment(
     target_recall: float = 0.9,
     random_state: int = 42,
     save_plots: bool = True,
+    return_details: bool = False,
 ) -> dict:
     """训练并评价一个自监督 Autoencoder 实验。"""
 
@@ -297,6 +298,12 @@ def _run_autoencoder_experiment(
             output_dir,
         )
 
+    if return_details:
+        return {
+            "metrics": metrics,
+            "predictions": predictions,
+            "scores": test_scores,
+        }
     return metrics
 
 
@@ -309,6 +316,7 @@ def run_vanilla_autoencoder(
     target_recall: float = 0.9,
     random_state: int = 42,
     save_plots: bool = True,
+    return_details: bool = False,
 ) -> dict:
     """训练普通 Autoencoder，作为没有 Transformer 的消融对照组。"""
 
@@ -324,6 +332,7 @@ def run_vanilla_autoencoder(
         target_recall=target_recall,
         random_state=random_state,
         save_plots=save_plots,
+        return_details=return_details,
     )
 
 
@@ -337,6 +346,7 @@ def run_autoencoder(
     target_recall: float = 0.9,
     random_state: int = 42,
     save_plots: bool = True,
+    return_details: bool = False,
 ) -> dict:
     """训练 Masked Transformer Autoencoder。"""
 
@@ -353,6 +363,7 @@ def run_autoencoder(
         target_recall=target_recall,
         random_state=random_state,
         save_plots=save_plots,
+        return_details=return_details,
     )
 
 

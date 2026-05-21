@@ -33,6 +33,8 @@ def _to_builtin(value: Any) -> Any:
 def build_dataset_summary(data: PreparedData) -> dict[str, Any]:
     """生成数据集概况，帮助汇报时说明实验数据规模。"""
 
+    train_attack_types = _raw_label_counts(data.y_train_raw)
+    test_attack_types = _raw_label_counts(data.y_test_raw)
     return {
         "train_samples": int(data.x_train.shape[0]),
         "test_samples": int(data.x_test.shape[0]),
@@ -40,8 +42,17 @@ def build_dataset_summary(data: PreparedData) -> dict[str, Any]:
         "graph_feature_count": int(sum(name.startswith("graph_") for name in data.feature_names)),
         "train_label_summary": label_summary(data.y_train),
         "test_label_summary": label_summary(data.y_test),
+        "train_attack_type_summary": train_attack_types,
+        "test_attack_type_summary": test_attack_types,
         "feature_names": data.feature_names,
     }
+
+
+def _raw_label_counts(labels: np.ndarray) -> dict[str, int]:
+    """统计原始标签，保留 PortScan、DDoS 等攻击类型名称。"""
+
+    values, counts = np.unique(labels.astype(str), return_counts=True)
+    return {str(value): int(count) for value, count in zip(values, counts)}
 
 
 def save_json(data: dict[str, Any], output_path: str | Path) -> Path:
@@ -122,6 +133,7 @@ def write_experiment_report(
 - 轻量图结构特征数量：{dataset_summary["graph_feature_count"]}
 - 训练集标签分布：{dataset_summary["train_label_summary"]}
 - 测试集标签分布：{dataset_summary["test_label_summary"]}
+- 测试集原始攻击类型分布：{dataset_summary.get("test_attack_type_summary", {})}
 
 ## 3. 方法设计
 
@@ -151,10 +163,11 @@ def write_experiment_report(
 - `roc_curve_*.png`：每个模型的 ROC 曲线。
 - `precision_recall_curve_*.png`：Precision-Recall 曲线，适合攻击样本比例不均衡的情况。
 - `score_histogram_*.png`：自编码器重构误差分布。
+- `attack_type_metrics.csv`：按攻击类型统计 Recall 和 F1，用来说明多攻击混合实验不是只看总体平均。
 
 ## 6. 不足与改进
 
-当前项目是课程场景下的轻量实现，重点复现“自监督 + Transformer + 重构误差异常检测”的核心思想，并通过普通 Autoencoder 与 Masked Transformer Autoencoder 的对比做消融实验。后续可以进一步加入 IP、端口和会话关系，构造图结构，再扩展为 Graph Transformer 或 GNN 入侵检测模型。
+当前项目是课程场景下的轻量实现，重点复现“自监督 + Transformer + 重构误差异常检测”的核心思想，并通过普通 Autoencoder、Transformer Autoencoder 与 Masked Transformer Autoencoder 的对比做消融实验。如果当前清洗版数据缺少完整 IP 字段，图结构部分只能做端口/关系统计；后续可以进一步加入 IP、端口和会话关系，构造完整图结构，再扩展为 Graph Transformer 或 GNN 入侵检测模型。
 """
 
     output_path.write_text(text, encoding="utf-8")

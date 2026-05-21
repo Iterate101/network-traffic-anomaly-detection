@@ -18,10 +18,10 @@ def test_pipeline_artifacts_are_written(tmp_path) -> None:
         },
         [{"model": "Demo"}],
         [{"model": "Masked Transformer Autoencoder"}],
+        [{"model": "Demo", "attack_type": "Attack"}],
         tmp_path,
     )
 
     assert checklist_path.exists()
     assert manifest_path.exists()
     assert "项目提交清单" in checklist_path.read_text(encoding="utf-8")
-

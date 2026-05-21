@@ -49,6 +49,7 @@ python -m src.run_research_pipeline --demo-data --demo-samples 600 --epochs 2 --
 
 - 本项目参考 TOP 论文中的自监督学习、Transformer Autoencoder 和图结构建模思想。
 - 项目实现了普通 AE、Transformer AE、Masked Transformer AE 的消融对比。
-- 当前真实数据结果显示：Transformer AE 在自监督模型中综合表现最好。
-- Masked Transformer AE 的 Recall 更高，但 Precision 和 F1 下降，因此掩码重构需要通过实验验证。
+- 当前多攻击混合实验显示：Vanilla AE 在自监督模型中综合 F1/ROC-AUC 最好，说明重构误差异常检测本身有效。
+- Masked Transformer AE 的 Recall 最高，但 Precision 和 F1 下降，因此掩码重构需要通过实验验证。
+- `attack_type_metrics.csv` 可以按 DDoS、PortScan、WebAttack 等攻击类型说明检测效果，不只看总体平均。
 - 验证集用于异常分数方向校准和阈值选择，汇报时应表述为“自监督表示学习 + 少量标签阈值校准”。

@@ -31,7 +31,7 @@
 
 为什么要加普通 Autoencoder：
 
-这是消融实验。它用来回答“Transformer 是否真的有必要”。如果只做 Transformer，没有普通 Autoencoder 对照，研究说服力会弱。当前真实数据结果中，`Transformer Autoencoder` 的 F1 和 ROC-AUC 都高于 `Vanilla Autoencoder`，说明注意力机制确实带来了提升。
+这是消融实验。它用来回答“Transformer 是否真的有必要”。如果只做 Transformer，没有普通 Autoencoder 对照，研究说服力会弱。当前多攻击混合实验中，`Vanilla Autoencoder` 的综合 F1 和 ROC-AUC 高于 Transformer 版本，说明复杂结构不是无条件提升，必须通过消融实验验证。
 
 ## 3. 参考论文方法二：Transformer 注意力机制
 
@@ -64,7 +64,7 @@
 
 这个思想和自监督学习中的 masked reconstruction 很接近，比如 NLP 中遮住词让模型预测，表格异常检测中遮住特征让模型恢复。
 
-当前真实数据实验中，`mask_ratio = 0` 的普通 Transformer Autoencoder 反而优于掩码版本。这说明本项目不是简单宣称“加掩码就更好”，而是通过实验得到结论：掩码重构在 PortScan 子集上会提高 Recall 倾向，但会牺牲 Precision 和 F1。
+当前多攻击实验中，`Masked Transformer Autoencoder` 的 Recall 最高，但 Precision 和 F1 下降。这说明本项目不是简单宣称“加掩码就更好”，而是通过实验得到结论：掩码重构更偏向少漏报，但会带来更多误报，需要根据安全目标选择。
 
 ## 5. 实验如何体现“复现或改进”
 
@@ -101,21 +101,22 @@
 
 ## 7. 当前真实数据结果
 
-当前实验使用 CIC-IDS2017 清洗版 `Friday-WorkingHours-Afternoon-PortScan` 子集。读取前 20000 行后，训练集为 14404 行，测试集为 4802 行。
+当前实验使用 CIC-IDS2017 清洗版多攻击混合数据，包含 DDoS、PortScan 和 WebAttack。读取 60000 行后，训练集为 44169 行，测试集为 14723 行。
 
 | 模型 | Accuracy | Precision | Recall | F1 | ROC-AUC |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| RandomForest | 0.9996 | 1.0000 | 0.9992 | 0.9996 | 1.0000 |
-| MLP | 0.9992 | 1.0000 | 0.9985 | 0.9992 | 0.9994 |
-| Vanilla Autoencoder | 0.8134 | 0.7456 | 0.9977 | 0.8535 | 0.7124 |
-| Transformer Autoencoder | 0.8430 | 0.8090 | 0.9315 | 0.8660 | 0.8595 |
-| Masked Transformer Autoencoder | 0.7118 | 0.6589 | 0.9759 | 0.7867 | 0.6741 |
+| RandomForest | 0.9994 | 1.0000 | 0.9984 | 0.9992 | 1.0000 |
+| MLP | 0.9974 | 0.9973 | 0.9957 | 0.9965 | 0.9996 |
+| Vanilla Autoencoder | 0.7970 | 0.6730 | 0.8971 | 0.7690 | 0.8840 |
+| Transformer Autoencoder | 0.6640 | 0.5321 | 0.8960 | 0.6677 | 0.6396 |
+| Masked Transformer Autoencoder | 0.6330 | 0.5066 | 0.9930 | 0.6709 | 0.6824 |
 
 这组结果可以支撑三个汇报结论：
 
 - 监督模型很强，但这不等于项目只是普通分类，因为自监督模型没有用攻击样本训练表示。
-- `Transformer Autoencoder` 优于 `Vanilla Autoencoder`，说明 Transformer 注意力机制有贡献。
-- `Masked Transformer Autoencoder` 的 Recall 更高但 F1 更低，说明掩码重构需要根据数据集验证。
+- `Vanilla Autoencoder` 在混合攻击中综合最好，说明重构误差异常检测本身有效。
+- `Masked Transformer Autoencoder` 的 Recall 最高但 F1 更低，说明掩码重构需要根据数据集和安全目标验证。
+- `attack_type_metrics.csv` 进一步按攻击类型评价，能说明 DDoS、PortScan 和 WebAttack 的检测难度差异。
 
 ## 8. 新增研究实验：Mask Ratio 消融
 

@@ -21,6 +21,8 @@ def test_demo_data_can_be_prepared() -> None:
 
     assert prepared.x_train.shape[1] == len(prepared.feature_names)
     assert prepared.x_test.shape[1] == len(prepared.feature_names)
+    assert prepared.y_train_raw.shape[0] == prepared.y_train.shape[0]
+    assert prepared.y_test_raw.shape[0] == prepared.y_test.shape[0]
     assert set(np.unique(prepared.y_train)).issubset({0, 1})
     assert not np.isnan(prepared.x_train).any()
     assert not np.isnan(prepared.x_test).any()

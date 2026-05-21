@@ -67,6 +67,9 @@ def _build_recommendations(report: dict[str, Any]) -> list[str]:
     if report["attack_samples"] == 0:
         recommendations.append("没有检测到攻击样本，无法评价 Recall、F1 和 ROC-AUC；请检查标签列。")
 
+    if report["attack_samples"] > 0 and report["attack_type_count"] < 2:
+        recommendations.append("当前只检测到一种攻击类型；若老师关注实验可信度，建议加入 DDoS、WebAttack 或 Infiltration 等更多 CSV 做混合实验。")
+
     if report["benign_samples"] == 0:
         recommendations.append("没有检测到正常样本，自监督 Autoencoder 无法只用正常流量训练。")
 
@@ -102,6 +105,10 @@ def inspect_dataframe(
 
     labels = data[label_column].astype(str).str.strip()
     binary_labels = labels.map(lambda value: 0 if value.upper() in {"BENIGN", "NORMAL"} else 1)
+    attack_label_counts = {
+        label: count
+        for label, count in _series_top_counts(labels[binary_labels == 1], top_k=20).items()
+    }
 
     source_ip_column = _detect_column(data.columns, SOURCE_IP_COLUMNS)
     destination_ip_column = _detect_column(data.columns, DESTINATION_IP_COLUMNS)
@@ -131,6 +138,8 @@ def inspect_dataframe(
         "duplicate_rows": int(data.duplicated().sum()),
         "label_column": label_column,
         "label_top_counts": _series_top_counts(labels),
+        "attack_label_counts": attack_label_counts,
+        "attack_type_count": len(attack_label_counts),
         "benign_samples": int((prepared_labels == 0).sum()),
         "attack_samples": int((prepared_labels == 1).sum()),
         "binary_attack_ratio": float(binary_labels.mean()) if len(binary_labels) else 0.0,
@@ -190,6 +199,7 @@ def write_inspection_report(report: dict[str, Any], output_dir: str | Path) -> t
 - 正常样本数：{report["benign_samples"]}
 - 攻击样本数：{report["attack_samples"]}
 - 攻击样本比例：{report["binary_attack_ratio"]:.4f}
+- 攻击类型数量：{report["attack_type_count"]}
 
 ## 3. 数据质量
 
@@ -212,6 +222,12 @@ def write_inspection_report(report: dict[str, Any], output_dir: str | Path) -> t
 
 ```text
 {json.dumps(report["label_top_counts"], ensure_ascii=False, indent=2)}
+```
+
+攻击类型分布：
+
+```text
+{json.dumps(report["attack_label_counts"], ensure_ascii=False, indent=2)}
 ```
 
 ## 6. 建议

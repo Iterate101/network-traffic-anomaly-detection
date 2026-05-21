@@ -1,7 +1,12 @@
 import numpy as np
 import pytest
 
-from src.evaluate import build_threshold_analysis, choose_threshold_for_f1, orient_anomaly_scores
+from src.evaluate import (
+    build_attack_type_metrics,
+    build_threshold_analysis,
+    choose_threshold_for_f1,
+    orient_anomaly_scores,
+)
 from src.run_mask_ablation import parse_mask_ratios
 
 
@@ -56,6 +61,21 @@ def test_orient_anomaly_scores_inverts_when_validation_auc_is_bad() -> None:
     assert raw_auc < 0.5
     assert np.allclose(oriented_valid, -valid_scores)
     assert np.allclose(oriented_test, -test_scores)
+
+
+def test_attack_type_metrics_compare_each_attack_with_benign() -> None:
+    """攻击类型指标应该能说明每类攻击的检测效果。"""
+
+    rows = build_attack_type_metrics(
+        "Demo",
+        y_true=np.array([0, 0, 1, 1, 1]),
+        y_pred=np.array([0, 1, 1, 0, 1]),
+        raw_labels=np.array(["BENIGN", "BENIGN", "PortScan", "PortScan", "DDoS"]),
+    )
+
+    attack_types = {row["attack_type"] for row in rows}
+    assert attack_types == {"DDoS", "PortScan"}
+    assert all("recall" in row and "f1" in row for row in rows)
 
 
 def test_parse_mask_ratios() -> None:

@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from pathlib import Path
 from typing import Iterable
 
@@ -52,6 +53,8 @@ class PreparedData:
     x_test: np.ndarray
     y_train: np.ndarray
     y_test: np.ndarray
+    y_train_raw: np.ndarray
+    y_test_raw: np.ndarray
     feature_names: list[str]
     scaler: StandardScaler
 
@@ -225,7 +228,11 @@ def _read_single_csv(path: Path, nrows: int | None = None) -> pd.DataFrame:
         return pd.read_csv(path, nrows=nrows, low_memory=False, encoding="latin1")
 
 
-def load_traffic_csvs(data_dir: str | Path, max_rows: int | None = None) -> pd.DataFrame:
+def load_traffic_csvs(
+    data_dir: str | Path,
+    max_rows: int | None = None,
+    random_state: int = 42,
+) -> pd.DataFrame:
     """读取 data 目录下的所有 CSV，并合并成一个 DataFrame（表格数据）。"""
 
     csv_files = find_csv_files(data_dir)
@@ -235,22 +242,22 @@ def load_traffic_csvs(data_dir: str | Path, max_rows: int | None = None) -> pd.D
         )
 
     frames: list[pd.DataFrame] = []
-    remaining_rows = max_rows
+    rows_per_file = None
+    if max_rows is not None:
+        rows_per_file = max(1, math.ceil(max_rows / len(csv_files)))
 
     for path in csv_files:
-        if remaining_rows is not None and remaining_rows <= 0:
-            break
-
-        frame = _read_single_csv(path, nrows=remaining_rows)
+        frame = _read_single_csv(path, nrows=rows_per_file)
+        frame["__source_csv"] = path.name
         frames.append(frame)
-
-        if remaining_rows is not None:
-            remaining_rows -= len(frame)
 
     if not frames:
         raise ValueError("CSV 文件存在，但没有读取到任何数据行。")
 
-    return pd.concat(frames, ignore_index=True)
+    data = pd.concat(frames, ignore_index=True)
+    if max_rows is not None and len(data) > max_rows:
+        data = data.sample(n=max_rows, random_state=random_state)
+    return data.sample(frac=1.0, random_state=random_state).reset_index(drop=True)
 
 
 def build_demo_dataframe(n_samples: int = 2400, random_state: int = 42) -> pd.DataFrame:
@@ -455,6 +462,8 @@ def split_and_scale(
         x_test=x_test,
         y_train=y_train,
         y_test=y_test,
+        y_train_raw=np.where(y_train == 0, "BENIGN", "Attack"),
+        y_test_raw=np.where(y_test == 0, "BENIGN", "Attack"),
         feature_names=list(features.columns),
         scaler=scaler,
     )
@@ -489,6 +498,7 @@ def build_prepared_data_from_dataframe(
     data = data.drop_duplicates().reset_index(drop=True)
     labels = data[label_column].astype(str).str.strip()
     y = labels.map(lambda value: 0 if value.upper() in {"BENIGN", "NORMAL"} else 1).to_numpy(dtype=np.int64)
+    raw_labels = labels.to_numpy(dtype=str)
 
     stratify = y if len(np.unique(y)) == 2 else None
     indices = np.arange(len(data))
@@ -503,6 +513,8 @@ def build_prepared_data_from_dataframe(
     test_raw = data.iloc[test_indices].reset_index(drop=True)
     y_train = y[train_indices]
     y_test = y[test_indices]
+    y_train_raw = raw_labels[train_indices]
+    y_test_raw = raw_labels[test_indices]
 
     train_features = _numeric_feature_frame(train_raw, label_column)
     test_features = _numeric_feature_frame(test_raw, label_column)
@@ -536,6 +548,8 @@ def build_prepared_data_from_dataframe(
         x_test=x_test,
         y_train=y_train,
         y_test=y_test,
+        y_train_raw=y_train_raw,
+        y_test_raw=y_test_raw,
         feature_names=list(train_features.columns),
         scaler=scaler,
     )
@@ -551,7 +565,7 @@ def load_or_build_dataframe(
     """优先读取真实 CSV；如果没有数据且允许演示，就生成教学数据。"""
 
     if find_csv_files(data_dir):
-        return load_traffic_csvs(data_dir, max_rows=max_rows)
+        return load_traffic_csvs(data_dir, max_rows=max_rows, random_state=random_state)
     if demo_data:
         return build_demo_dataframe(n_samples=demo_samples, random_state=random_state)
     raise FileNotFoundError(

@@ -99,6 +99,47 @@ def classification_metrics(
     return result
 
 
+def build_attack_type_metrics(
+    model_name: str,
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    raw_labels: np.ndarray,
+) -> list[dict[str, float | int | str]]:
+    """按攻击类型评估二分类检测效果。
+
+    这里不是做攻击类型多分类，而是把每一种攻击分别拿出来，
+    和 BENIGN 样本组成一个小二分类评价集，观察该模型对不同攻击的发现能力。
+    """
+
+    labels = np.array([str(label).strip() for label in raw_labels])
+    normal_mask = np.isin(np.char.upper(labels.astype(str)), ["BENIGN", "NORMAL"])
+    attack_types = sorted({label for label in labels[~normal_mask] if label})
+
+    rows: list[dict[str, float | int | str]] = []
+    for attack_type in attack_types:
+        attack_mask = labels == attack_type
+        subset_mask = normal_mask | attack_mask
+        if not np.any(attack_mask) or not np.any(subset_mask):
+            continue
+
+        subset_true = y_true[subset_mask]
+        subset_pred = y_pred[subset_mask]
+        rows.append(
+            {
+                "model": model_name,
+                "attack_type": attack_type,
+                "benign_samples": int(np.sum(normal_mask)),
+                "attack_samples": int(np.sum(attack_mask)),
+                "accuracy": accuracy_score(subset_true, subset_pred),
+                "precision": precision_score(subset_true, subset_pred, zero_division=0),
+                "recall": recall_score(subset_true, subset_pred, zero_division=0),
+                "f1": f1_score(subset_true, subset_pred, zero_division=0),
+            }
+        )
+
+    return rows
+
+
 def orient_anomaly_scores(
     y_valid: np.ndarray,
     valid_scores: np.ndarray,

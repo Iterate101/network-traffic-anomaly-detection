@@ -93,21 +93,23 @@ python -m src.run_research_pipeline --data-dir data --results-dir results --max-
 
 ## 6. 当前真实数据实验结论
 
-当前已使用 CIC-IDS2017 清洗版 `Friday-WorkingHours-Afternoon-PortScan` 子集跑通实验。读取前 20000 行后，训练集为 14404 行，测试集为 4802 行。
+当前已使用 CIC-IDS2017 清洗版多攻击混合数据跑通实验，包含 DDoS、PortScan 和 WebAttack。读取 60000 行后，训练集为 44169 行，测试集为 14723 行。
 
 | 模型 | Accuracy | Precision | Recall | F1 | ROC-AUC |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| RandomForest | 0.9996 | 1.0000 | 0.9992 | 0.9996 | 1.0000 |
-| MLP | 0.9992 | 1.0000 | 0.9985 | 0.9992 | 0.9994 |
-| Vanilla Autoencoder | 0.8134 | 0.7456 | 0.9977 | 0.8535 | 0.7124 |
-| Transformer Autoencoder | 0.8430 | 0.8090 | 0.9315 | 0.8660 | 0.8595 |
-| Masked Transformer Autoencoder | 0.7118 | 0.6589 | 0.9759 | 0.7867 | 0.6741 |
+| RandomForest | 0.9994 | 1.0000 | 0.9984 | 0.9992 | 1.0000 |
+| MLP | 0.9974 | 0.9973 | 0.9957 | 0.9965 | 0.9996 |
+| Vanilla Autoencoder | 0.7970 | 0.6730 | 0.8971 | 0.7690 | 0.8840 |
+| Transformer Autoencoder | 0.6640 | 0.5321 | 0.8960 | 0.6677 | 0.6396 |
+| Masked Transformer Autoencoder | 0.6330 | 0.5066 | 0.9930 | 0.6709 | 0.6824 |
 
 讲解时可以这样总结：
 
-- 监督模型接近满分，说明 PortScan 子集较容易被传统特征区分。
-- 在自监督模型内部，`Transformer Autoencoder` 比 `Vanilla Autoencoder` 更好，说明注意力机制带来了提升。
-- `Masked Transformer Autoencoder` 的 Recall 更高，但 Precision 和 F1 下降，说明掩码重构需要通过消融实验验证，不能假设一定提升。
+- 多攻击混合实验比单 PortScan 更可信，能回应“项目是否太简单”的问题。
+- 监督模型接近满分，说明 CIC-IDS2017 的表格特征对传统分类很友好。
+- 在自监督模型内部，`Vanilla Autoencoder` 综合 F1 和 ROC-AUC 最好，说明重构误差异常检测本身有效。
+- `Masked Transformer Autoencoder` 的 Recall 最高，但 Precision 和 F1 下降，说明掩码重构更偏向少漏报，需要通过消融实验验证，不能假设一定提升。
+- `attack_type_metrics.csv` 会展示不同攻击类型的 Recall/F1，适合说明 WebAttack 这类少样本攻击更难检测。
 - 项目增加了异常分数方向校准：如果验证集发现“低重构误差更像攻击”，就把分数方向翻转，统一解释为“分数越高越像攻击”。
 
 ## 7. 运行 Mask Ratio 消融实验
@@ -127,7 +129,7 @@ python -m src.run_mask_ablation --data-dir data --max-rows 20000 --epochs 8 --ma
 - `mask_ratio_ablation.csv`：每个掩码比例对应的指标。
 - `mask_ratio_ablation.png`：不同掩码比例的 Recall、F1、ROC-AUC 对比。
 
-这个实验的讲法是：掩码比例太低时，任务可能太简单；掩码比例太高时，输入信息损失太多。当前真实数据结果中 `mask_ratio = 0` 表现最好，说明普通 Transformer AE 比掩码重构版本更适合这个 PortScan 子集，这本身就是一个有价值的消融结论。
+这个实验的讲法是：掩码比例太低时，任务可能太简单；掩码比例太高时，输入信息损失太多。当前多攻击实验中 `mask_ratio = 0.45` 的 F1 最好，而 `mask_ratio = 0.15` 的 Recall 最高，说明掩码比例会改变“少漏报”和“少误报”的取舍。
 
 ## 8. 轻量图结构特征
 

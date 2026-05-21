@@ -111,26 +111,29 @@ python -m src.run_mask_ablation --data-dir data --max-rows 20000 --epochs 8 --ma
 
 - `mask_ratio_ablation.csv`：不同掩码比例的指标表
 - `mask_ratio_ablation.png`：Recall、F1、ROC-AUC 随掩码比例变化的折线图
+- `attack_type_metrics.csv`：不同攻击类型上的 Recall 和 F1
 
 它的意义是回答：**为什么选择某个掩码比例？掩码比例过小或过大会不会影响检测效果？**
 
 ## 最新真实数据结果
 
-当前已在 CIC-IDS2017 清洗版 `Friday-WorkingHours-Afternoon-PortScan` 子集上跑通小规模实验。为了适合课程演示，实验读取随机打乱后的前 20000 行，训练集 14404 行，测试集 4802 行，特征数 79。
+当前已在 CIC-IDS2017 清洗版多攻击混合数据上跑通实验，包含 `DDoS`、`PortScan`、`Web Attack Brute Force`、`Web Attack XSS` 和 `Web Attack Sql Injection`。为了适合课程演示，实验读取 60000 行，训练集 44169 行，测试集 14723 行，特征数 79。
 
 | 模型 | Accuracy | Precision | Recall | F1 | ROC-AUC |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| RandomForest | 0.9996 | 1.0000 | 0.9992 | 0.9996 | 1.0000 |
-| MLP | 0.9992 | 1.0000 | 0.9985 | 0.9992 | 0.9994 |
-| Vanilla Autoencoder | 0.8134 | 0.7456 | 0.9977 | 0.8535 | 0.7124 |
-| Transformer Autoencoder | 0.8430 | 0.8090 | 0.9315 | 0.8660 | 0.8595 |
-| Masked Transformer Autoencoder | 0.7118 | 0.6589 | 0.9759 | 0.7867 | 0.6741 |
+| RandomForest | 0.9994 | 1.0000 | 0.9984 | 0.9992 | 1.0000 |
+| MLP | 0.9974 | 0.9973 | 0.9957 | 0.9965 | 0.9996 |
+| Vanilla Autoencoder | 0.7970 | 0.6730 | 0.8971 | 0.7690 | 0.8840 |
+| Transformer Autoencoder | 0.6640 | 0.5321 | 0.8960 | 0.6677 | 0.6396 |
+| Masked Transformer Autoencoder | 0.6330 | 0.5066 | 0.9930 | 0.6709 | 0.6824 |
 
 结果说明：
 
-- `RandomForest` 和 `MLP` 接近满分，说明这个 PortScan 子集的监督分类边界较明显。
-- `Transformer Autoencoder` 在自监督模型中综合表现最好，F1 和 ROC-AUC 都高于普通 Autoencoder。
-- `Masked Transformer Autoencoder` 的 Recall 更高，但 Precision 和 F1 下降，说明掩码重构在该子集上不是无条件提升。
+- 多攻击混合实验比单 PortScan 更可信，`data_inspection.md` 会显示 5 种攻击标签。
+- `RandomForest` 和 `MLP` 仍然接近满分，说明 CIC-IDS2017 的监督表格特征区分度很强。
+- `Vanilla Autoencoder` 在自监督模型中综合表现最好，说明重构误差异常检测本身有效。
+- `Masked Transformer Autoencoder` 的 Recall 最高，适合强调“少漏报”的安全目标，但 Precision 和 F1 会下降。
+- `attack_type_metrics.csv` 会按 DDoS、PortScan、WebAttack 等攻击类型统计 Recall 和 F1，避免只看总体平均。
 - 自编码器训练只使用正常样本；验证集标签用于异常分数方向校准和阈值选择，因此汇报时应表述为“自监督表示学习 + 少量标签阈值校准”。
 
 ## 推荐汇报流程

@@ -24,6 +24,7 @@ from src.artifacts import (
     write_experiment_report,
 )
 from src.evaluate import (
+    build_attack_type_metrics,
     plot_label_distribution,
     plot_mask_ratio_ablation,
     plot_metric_comparison,
@@ -60,6 +61,7 @@ def write_submission_checklist(
         "data_inspection.md",
         "experiment_report.md",
         "metrics.csv",
+        "attack_type_metrics.csv",
         "dataset_summary.json",
         "label_distribution.png",
         "model_metric_comparison.png",
@@ -120,6 +122,7 @@ def write_pipeline_manifest(
     inspection_report: dict[str, Any],
     metrics: list[dict[str, Any]],
     mask_metrics: list[dict[str, Any]],
+    attack_type_metrics: list[dict[str, Any]],
     output_dir: str | Path,
 ) -> Path:
     """保存流水线总览 JSON，方便之后追踪本次实验配置。"""
@@ -133,6 +136,7 @@ def write_pipeline_manifest(
         "graph_feature_count": inspection_report["graph_feature_count"],
         "main_models": [item.get("model") for item in metrics],
         "mask_ablation_count": len(mask_metrics),
+        "attack_type_metric_count": len(attack_type_metrics),
     }
     output_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return output_path
@@ -207,13 +211,14 @@ def main() -> None:
     print(f"  训练集标签分布：{label_summary(data.y_train)}")
     print(f"  测试集标签分布：{label_summary(data.y_test)}")
 
-    metrics = run_baselines(
+    model_results = run_baselines(
         data,
         results_dir=results_dir,
         random_state=args.random_state,
         save_plots=True,
+        return_details=True,
     )
-    metrics.append(
+    model_results.append(
         run_vanilla_autoencoder(
             data,
             results_dir=results_dir,
@@ -223,9 +228,10 @@ def main() -> None:
             target_recall=args.target_recall,
             random_state=args.random_state,
             save_plots=True,
+            return_details=True,
         )
     )
-    metrics.append(
+    model_results.append(
         run_autoencoder(
             data,
             results_dir=results_dir,
@@ -236,9 +242,10 @@ def main() -> None:
             target_recall=args.target_recall,
             random_state=args.random_state,
             save_plots=True,
+            return_details=True,
         )
     )
-    metrics.append(
+    model_results.append(
         run_autoencoder(
             data,
             results_dir=results_dir,
@@ -249,9 +256,22 @@ def main() -> None:
             target_recall=args.target_recall,
             random_state=args.random_state,
             save_plots=True,
+            return_details=True,
         )
     )
+    metrics = [result["metrics"] for result in model_results]
+    attack_type_metrics: list[dict[str, Any]] = []
+    for result in model_results:
+        attack_type_metrics.extend(
+            build_attack_type_metrics(
+                str(result["metrics"]["model"]),
+                data.y_test,
+                result["predictions"],
+                data.y_test_raw,
+            )
+        )
     save_metrics(metrics, results_dir / "metrics.csv")
+    save_metrics(attack_type_metrics, results_dir / "attack_type_metrics.csv")
     plot_metric_comparison(metrics, results_dir)
     write_experiment_report(metrics, dataset_summary, results_dir)
 
@@ -280,7 +300,7 @@ def main() -> None:
 
     print("步骤 4/4：生成提交清单...")
     write_submission_checklist(results_dir, include_mask_ablation=not args.skip_mask_ablation)
-    write_pipeline_manifest(args, inspection_report, metrics, mask_metrics, results_dir)
+    write_pipeline_manifest(args, inspection_report, metrics, mask_metrics, attack_type_metrics, results_dir)
     print(f"流水线完成，所有结果已保存到：{results_dir.resolve()}")
 
 

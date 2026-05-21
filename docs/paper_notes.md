@@ -52,10 +52,10 @@
 
 | 模型 | F1 | ROC-AUC | 讲解价值 |
 | --- | ---: | ---: | --- |
-| Vanilla Autoencoder | 0.8535 | 0.7124 | 复现普通重构误差异常检测 |
-| Transformer Autoencoder | 0.8660 | 0.8595 | 说明注意力机制提升自监督模型 |
-| Masked Transformer Autoencoder | 0.7867 | 0.6741 | 说明掩码重构需要消融验证，不是必然提升 |
+| Vanilla Autoencoder | 0.7690 | 0.8840 | 复现普通重构误差异常检测，混合攻击下综合最好 |
+| Transformer Autoencoder | 0.6677 | 0.6396 | 说明 Transformer 结构已实现，但复杂模型不一定无条件提升 |
+| Masked Transformer Autoencoder | 0.6709 | 0.6824 | Recall 最高，说明掩码重构更偏向少漏报，需要消融验证 |
 
 汇报时不要说“我们完整复现了 GTAE-IDS”。更稳妥的说法是：
 
-> 我们参考 TOP 论文中的自监督、Transformer 和图建模思想，做了课程级轻量复现；其中完整实现的是自编码器重构误差、Transformer 特征 token 建模、阈值策略分析和 mask ratio 消融，图方法部分以端口/IP 统计特征形式简化实现。
+> 我们参考 TOP 论文中的自监督、Transformer 和图建模思想，做了课程级轻量复现；其中完整实现的是自编码器重构误差、Transformer 特征 token 建模、阈值策略分析、按攻击类型评价和 mask ratio 消融，图方法部分以端口/IP 统计特征形式简化实现。多攻击实验也说明，复杂模型不一定自动更好，必须用消融实验验证。

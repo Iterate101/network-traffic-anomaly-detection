@@ -73,6 +73,7 @@ def run_baselines(
     results_dir: str | Path = "results",
     random_state: int = 42,
     save_plots: bool = True,
+    return_details: bool = False,
 ) -> list[dict]:
     """依次训练两个基线模型，并可选保存图表。"""
 
@@ -99,6 +100,8 @@ def run_baselines(
             plot_confusion_matrix(model_name, data.y_test, result["predictions"], output_dir)
             plot_roc_curve(model_name, data.y_test, result["scores"], output_dir)
 
+    if return_details:
+        return results
     return [result["metrics"] for result in results]
 
 

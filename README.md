@@ -136,6 +136,26 @@ python -m src.run_mask_ablation --data-dir data --max-rows 20000 --epochs 8 --ma
 - `attack_type_metrics.csv` 会按 DDoS、PortScan、WebAttack 等攻击类型统计 Recall 和 F1，避免只看总体平均。
 - 自编码器训练只使用正常样本；验证集标签用于异常分数方向校准和阈值选择，因此汇报时应表述为“自监督表示学习 + 少量标签阈值校准”。
 
+## 运行效果图
+
+下面是从本地 `results/` 精选出来、用于 GitHub 展示和课程汇报的效果图。完整实验输出仍然可以通过流水线重新生成。
+
+| 数据与总体结果 | 模型对比 |
+| --- | --- |
+| ![标签分布](docs/figures/label_distribution.png) | ![模型指标对比](docs/figures/model_metric_comparison.png) |
+
+| 误报漏报 | 异常分数解释 |
+| --- | --- |
+| ![Masked Transformer AE 混淆矩阵](docs/figures/confusion_matrix_masked_transformer_autoencoder.png) | ![Vanilla AE 异常分数分布](docs/figures/score_histogram_vanilla_autoencoder.png) |
+
+| 阈值策略 | Mask Ratio 消融 |
+| --- | --- |
+| ![阈值策略分析](docs/figures/threshold_analysis_masked_transformer_autoencoder.png) | ![Mask Ratio 消融](docs/figures/mask_ratio_ablation.png) |
+
+| 特征重要性 | ROC 曲线 |
+| --- | --- |
+| ![RandomForest 特征重要性](docs/figures/feature_importance_randomforest.png) | ![Vanilla AE ROC 曲线](docs/figures/roc_curve_vanilla_autoencoder.png) |
+
 ## 推荐汇报流程
 
 如果时间很紧，可以按下面顺序准备：
@@ -177,10 +197,10 @@ python -m src.run_mask_ablation --data-dir data --max-rows 20000 --epochs 8 --ma
 
 ## GitHub 上传说明
 
-本仓库适合上传代码、测试和文档，不上传大数据、实验输出和 PPT：
+本仓库适合上传代码、测试、文档和精选效果图，不上传大数据、完整实验输出和 PPT：
 
-- 上传：`src/`、`tests/`、`docs/`、`README.md`、`requirements.txt`、`.gitignore`。
-- 不上传：`data/` 中的真实 CSV、`results/` 中的图表和指标、`presentation_workspace/` 中的 PPT 文件。
+- 上传：`src/`、`tests/`、`docs/`、`docs/figures/`、`README.md`、`requirements.txt`、`.gitignore`。
+- 不上传：`data/` 中的真实 CSV、`results/` 中的完整输出、`presentation_workspace/` 中的 PPT 文件、`papers/` 中的论文 PDF。
 - 如需复现实验，请先自行下载 CIC-IDS2017 或 Kaggle 清洗版 CSV 放入 `data/`，再运行 `python -m src.run_research_pipeline --data-dir data --max-rows 20000 --epochs 10 --ablation-epochs 6`。
 
 ## 代码模块怎么理解

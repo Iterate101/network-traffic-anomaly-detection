@@ -20,3 +20,6 @@ results/**
 presentation_workspace/**
 *.ppt
 *.pptx
+
+# 论文 PDF 仅用于本地课程分享，不上传仓库
+papers/**
